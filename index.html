@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Actividad Diaria - Envases Universales</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- D3.js CDN para la gráfica -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
         /* Colores personalizados */
         :root {
@@ -152,24 +153,80 @@
         .leaderboard-item span:last-child {
             font-size: 1rem; /* text-base */
         }
+
+        /* Estilos para la gráfica */
+        .chart-container {
+            background-color: #f8f8f8;
+            border-radius: 1rem;
+            padding: 1rem;
+            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+            border: 1px solid #e0e0e0;
+        }
+        .chart-container .chart-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--color-primary);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .chart-container svg {
+            display: block;
+            margin: auto;
+        }
+        .axis text {
+            font-size: 0.75rem;
+            fill: #666;
+        }
+        .axis line, .axis path {
+            stroke: #ccc;
+            stroke-width: 1;
+        }
+        .line {
+            fill: none;
+            stroke: var(--color-primary);
+            stroke-width: 2;
+        }
+        .dot {
+            fill: var(--color-primary);
+            stroke: white;
+            stroke-width: 1.5;
+        }
+        .dot.empty {
+            fill: #ccc; /* Color para puntos vacíos */
+        }
+        .imc-label {
+            font-size: 0.7rem; /* Tamaño de la etiqueta del IMC */
+            fill: #333; /* Color del texto */
+            text-anchor: middle; /* Centrar el texto en el punto */
+            pointer-events: none; /* Para que no interfiera con eventos del punto */
+        }
+        .reference-line {
+            stroke: #22c55e; /* green-500 */
+            stroke-width: 2;
+            stroke-dasharray: 5 5; /* Línea punteada */
+        }
+        .reference-label {
+            fill: #16a34a; /* green-700 */
+            font-size: 0.7rem;
+            text-anchor: start;
+        }
     </style>
 </head>
 <body>
     <div id="message-box" class="message-box"></div>
 
     <div class="card-container">
-        <!-- Header Section -->
         <div class="mb-6">
-            <h1 class="text-3xl font-extrabold text-[var(--color-primary)] mb-1">ENVASES UNIVERSALES</h1>
-            <h2 class="text-2xl font-bold text-[var(--color-primary)] mb-2">MP22</h2>
+            <h1 class="text-4xl font-extrabold text-[var(--color-primary)] mb-1">ENVASES UNIVERSALES</h1>
+            <h2 class="text-2xl font-bold text-[var(--color-primary)] mb-2">Planta León</h2>
             <p class="text-xl font-semibold text-[var(--color-secondary)]">Salud Ocupacional</p>
         </div>
 
-        <!-- Date and User Greeting -->
         <p id="current-date" class="text-2xl text-gray-600 mb-2 font-semibold"></p>
         <p id="user-greeting" class="text-xl font-semibold text-[var(--color-primary)] mb-4 animate-fade-in-down"></p>
 
-        <!-- User Selection Dropdown -->
         <div class="mb-6">
             <label for="user-select" class="block text-gray-700 text-sm font-bold mb-2 text-left">Selecciona tu nombre:</label>
             <select
@@ -181,7 +238,6 @@
             </select>
         </div>
 
-        <!-- Daily Stats Boxes -->
         <div class="grid grid-cols-2 gap-4 mb-2">
             <div class="bg-blue-50 p-4 rounded-lg shadow-sm border border-blue-200">
                 <p class="text-blue-700 text-sm font-semibold">Pasos Totales</p>
@@ -192,17 +248,21 @@
                 <p id="total-calories-display" class="text-green-900 text-2xl font-bold mt-1">0</p>
             </div>
         </div>
-        <!-- Última Fecha de Registro -->
         <div class="w-full bg-gray-100 p-2 rounded-lg shadow-sm border border-gray-200 mb-6">
             <p class="text-gray-700 text-sm font-semibold">Último Registro:</p>
             <p id="current-user-last-record-date" class="text-gray-900 text-lg font-bold mt-1">N/A</p>
         </div>
 
+        <!-- Nueva sección para la gráfica de IMC -->
+        <div id="imc-chart-section" class="chart-container hidden">
+            <div class="chart-title">Historial de IMC</div>
+            <div id="imc-chart"></div>
+            <p id="imc-chart-message" class="text-center text-gray-600 text-sm mt-2"></p>
+        </div>
+        <!-- Fin de la nueva sección para la gráfica -->
 
-        <!-- Daily Activity Input Section -->
         <h2 class="text-2xl font-bold text-[var(--color-primary)] mb-4 text-center">¡A Mover el Esqueleto! Registra tu Actividad Diaria</h2>
 
-        <!-- Manual Steps Input -->
         <div class="mb-4 text-left">
             <label for="manual-steps" class="block text-gray-700 text-sm font-bold mb-2">Pasos registrados (Registrados en tu celular):</label>
             <input
@@ -214,7 +274,6 @@
             />
         </div>
 
-        <!-- Screenshot Upload (Optional) -->
         <div class="mb-4 text-left">
             <label for="screenshot-upload" class="block text-gray-700 text-sm font-bold mb-2">Sube una captura de pantalla (opcional):</label>
             <input
@@ -229,7 +288,6 @@
             </div>
         </div>
 
-        <!-- Activity Selection Dropdown -->
         <div class="mb-4 text-left">
             <label for="activity-select" class="block text-gray-700 text-sm font-bold mb-2">Selecciona tu actividad:</label>
             <select
@@ -237,11 +295,9 @@
                 class="block w-full p-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-[var(--color-primary)] focus:ring-[var(--color-primary)] bg-gray-50 text-gray-800 text-lg shadow-sm"
             >
                 <option value="">-- Selecciona una actividad --</option>
-                <!-- Options will be populated by JS -->
-            </select>
+                </select>
         </div>
 
-        <!-- Duration Buttons -->
         <div class="w-full flex justify-around mt-4 mb-6 space-x-2">
             <button data-duration="15" class="btn-duration">15 min</button>
             <button data-duration="30" class="btn-duration">30 min</button>
@@ -249,7 +305,6 @@
             <button data-duration="60" class="btn-duration">60 min</button>
         </div>
 
-        <!-- Submit Daily Data Button -->
         <button
             id="submit-button"
             class="w-full btn-primary"
@@ -258,32 +313,29 @@
             Registrar Actividad Diaria
         </button>
 
-        <!-- Leaderboard Section -->
         <div class="leaderboard-section mt-8">
             <h2 class="text-2xl font-bold text-[var(--color-primary)] mb-4 text-center">
                 Tablero de Clasificación
             </h2>
             <ul id="leaderboard-list" class="space-y-3">
-                <!-- Leaderboard items will be populated by JS -->
-            </ul>
+                </ul>
             <p id="current-user-leaderboard-position" class="text-md text-gray-600 mt-4 text-center"></p>
         </div>
     </div>
 
-    <!-- Mensaje informativo al final -->
     <p class="text-xs text-gray-500 mt-4 text-center max-w-md">
         Los cálculos de calorías y pasos se basan en estimaciones promedio derivadas de investigaciones en ciencia del ejercicio y salud pública, como las proporcionadas por el Compendio de Actividades Físicas (ACSM) y organizaciones de salud reconocidas. Es importante recordar que el gasto calórico individual puede variar según el metabolismo, la intensidad y el peso corporal.
     </p>
 
     <script type="module">
         // URL de tu Google Apps Script desplegado como aplicación web
-        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzD0cdSPUfS_aM7cJdHWPcfcILCtqtjbDwwcQMyCUHpduUi8OFvja4J6JwFvzu7LU8L/exec';
+        const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyTQWw1KY_QTh-6_3tAY_w7TKv1LkzGDuCOxFX05_0K5j6ytRyfqkiulBOUIWxGuPzrwg/exec'; 
 
         // Variables globales para la aplicación
         let userName = null;
         let selectedActivity = null;
         let selectedDuration = null;
-        let uploadedImageBase64 = null; // Sigue siendo Base64 en el frontend antes de enviar
+        let uploadedImageBase64 = null;
         let hasSubmittedToday = false;
         let leaderboard = []; // Almacena los datos de la tabla de clasificación
 
@@ -312,9 +364,11 @@
         const leaderboardList = document.getElementById('leaderboard-list');
         const currentUserLeaderboardPosition = document.getElementById('current-user-leaderboard-position');
         const messageBox = document.getElementById('message-box');
+        const imcChartSection = document.getElementById('imc-chart-section'); // Contenedor de la gráfica
+        const imcChartDiv = document.getElementById('imc-chart'); // Div donde se renderizará la gráfica
+        const imcChartMessage = document.getElementById('imc-chart-message'); // Mensaje para la gráfica
 
         // Actividades comunes
-        // "Otra actividad" se mueve al final después de ordenar
         const commonActivities = [
             { name: 'Fútbol', stepsPerMin: 150, caloriesPerMin: 12 },
             { name: 'Ciclismo', stepsPerMin: 0, caloriesPerMin: 7 },
@@ -324,8 +378,8 @@
             { name: 'Box', stepsPerMin: 120, caloriesPerMin: 11 },
             { name: 'Levantamiento de Pesas', stepsPerMin: 20, caloriesPerMin: 6 },
             { name: 'Saltar la cuerda', stepsPerMin: 200, caloriesPerMin: 15 }, 
-            { name: 'Gimnasio', stepsPerMin: 50, caloriesPerMin: 8 }
-            // 'Otra actividad' ha sido eliminada de aquí
+            { name: 'Gimnasio', stepsPerMin: 50, caloriesPerMin: 8 }, 
+            { name: 'Otra actividad', stepsPerMin: 0, caloriesPerMin: 0 } 
         ];
 
         /**
@@ -347,15 +401,21 @@
         }
 
         /**
-         * Obtiene la fecha actual en formato YYYY-MM-DD.
-         * @returns {string} La fecha actual.
+         * Obtiene la fecha actual en formato YYYY-MM-DD para la zona horaria de CDMX.
+         * @returns {string} La fecha actual en la zona horaria de CDMX.
          */
         function getTodayDateString() {
-            const today = new Date();
-            const year = today.getFullYear();
-            const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+            const options = {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                timeZone: 'America/Mexico_City' // Zona horaria de CDMX/GDL
+            };
+            // Usamos 'en-CA' para asegurar el formato YYYY-MM-DD
+            const date = new Date();
+            const formattedDate = date.toLocaleDateString('en-CA', options);
+            console.log(`Frontend: Fecha actual (America/Mexico_City): ${formattedDate}`);
+            return formattedDate;
         }
 
         /**
@@ -421,6 +481,7 @@
 
         /**
          * Carga y muestra los datos del usuario actual (pasos y calorías totales) desde GAS.
+         * Ahora también carga y grafica los datos de IMC.
          */
         async function loadUserNameData() {
             if (!userName) {
@@ -430,59 +491,57 @@
                 currentUserLastRecordDateElem.textContent = 'N/A'; // Resetear la fecha de último registro
                 hasSubmittedToday = false;
                 updateSubmitButtonState();
+                imcChartSection.classList.add('hidden'); // Ocultar gráfica si no hay usuario
+                imcChartMessage.textContent = ''; // Limpiar mensaje
                 return;
             }
 
             try {
+                console.log(`loadUserNameData: Fetching totals for user: ${userName} from ${GAS_WEB_APP_URL}`);
                 const response = await fetch(GAS_WEB_APP_URL + '?command=getTotals&userName=' + encodeURIComponent(userName));
                 const data = await response.json();
+                console.log('loadUserNameData: Totals data received:', data);
 
                 if (data.success) {
                     totalStepsDisplay.textContent = data.totalSteps ? data.totalSteps.toLocaleString() : '0';
-                    totalCaloriesDisplay.textContent = data.totalCalories ? data.totalCalories.toLocaleString() : '0';
+                    totalCaloriesDisplay.textContent = data.totalCalories ? Math.round(data.totalCalories).toLocaleString() : '0'; // Redondear calorías
 
-                    const todayDate = getTodayDateString(); // Formato YYYY-MM-DD
-                    let gasLastSubmissionDate = data.lastSubmissionDate;
-                    let formattedGasDate = '';
+                    const todayDateFrontend = getTodayDateString(); // Fecha actual en frontend (CDMX)
+                    let gasLastSubmissionDate = data.lastSubmissionDate; // Fecha de último registro desde GAS (debería estar en la TZ del script)
 
-                    // Intentar parsear la fecha de GAS y formatearla a YYYY-MM-DD
-                    try {
-                        const dateFromGas = new Date(gasLastSubmissionDate);
-                        // Verificar si la fecha es válida antes de formatear
-                        if (!isNaN(dateFromGas.getTime())) {
-                            const year = dateFromGas.getFullYear();
-                            const month = String(dateFromGas.getMonth() + 1).padStart(2, '0');
-                            const day = String(dateFromGas.getDate()).padStart(2, '0');
-                            formattedGasDate = `${year}-${month}-${day}`;
-                        } else {
-                            // Si el parseo falla (ej. la cadena no es una fecha válida), usar la cadena tal cual
-                            formattedGasDate = String(gasLastSubmissionDate || '');
-                        }
-                    } catch (e) {
-                        console.warn("Error al intentar parsear la fecha de GAS, usando la cadena original:", e);
-                        formattedGasDate = String(gasLastSubmissionDate || '');
+                    // *** LOGS DE DEPURACIÓN ADICIONALES ***
+                    console.log(`loadUserNameData: Fecha de último registro desde GAS (Script TZ): ${gasLastSubmissionDate}`);
+                    console.log(`loadUserNameData: Fecha actual en Frontend (CDMX): ${todayDateFrontend}`);
+                    console.log(`loadUserNameData: ¿Son iguales las fechas? ${gasLastSubmissionDate === todayDateFrontend}`);
+                    console.log(`loadUserNameData: IMC data received from GAS:`, data.imcData); // <-- NUEVO LOG
+                    // *************************************
+
+                    hasSubmittedToday = gasLastSubmissionDate === todayDateFrontend;
+                    currentUserLastRecordDateElem.textContent = gasLastSubmissionDate || 'N/A'; // Actualizar el elemento de la última fecha de registro
+                    
+                    // Renderizar la gráfica de IMC
+                    if (data.imcData && Array.isArray(data.imcData)) {
+                        renderIMCChart(data.imcData);
+                    } else {
+                        imcChartSection.classList.add('hidden'); // Ocultar si no hay datos de IMC
+                        imcChartMessage.textContent = 'No hay datos de IMC para mostrar la gráfica.'; // Mensaje si no hay datos
                     }
 
-                    // Actualizar el elemento de la última fecha de registro
-                    currentUserLastRecordDateElem.textContent = formattedGasDate || 'N/A';
-
-                    // *** LOGS DE DEPURACIÓN ACTUALIZADOS ***
-                    console.log(`Fecha actual (frontend): ${todayDate}`);
-                    console.log(`Última fecha de registro (GAS, formateada en frontend): ${formattedGasDate}`);
-                    console.log(`¿Son iguales las fechas? ${formattedGasDate === todayDate}`);
-                    // *************************
-
-                    hasSubmittedToday = formattedGasDate === todayDate;
                 } else {
                     totalStepsDisplay.textContent = '0';
                     totalCaloriesDisplay.textContent = '0';
                     currentUserLastRecordDateElem.textContent = 'N/A'; // Resetear si hay error
+                    hasSubmittedToday = false;
+                    imcChartSection.classList.add('hidden'); // Ocultar gráfica si hay error
+                    imcChartMessage.textContent = 'Error al cargar datos de IMC.'; // Mensaje si hay error
                     console.error("Error al cargar datos del usuario desde GAS:", data.error);
                     showMessage("Error al cargar datos del usuario.", true);
                 }
             } catch (error) {
                 console.error("Error de red al cargar datos del usuario:", error);
                 showMessage("Error de conexión al cargar datos del usuario.", true);
+                imcChartSection.classList.add('hidden'); // Ocultar gráfica si hay error de red
+                imcChartMessage.textContent = 'Error de conexión al cargar datos de IMC.'; // Mensaje si hay error de red
             }
             updateSubmitButtonState(); // Actualizar el estado del botón después de cargar los datos
         }
@@ -492,8 +551,10 @@
          */
         async function fetchLeaderboardData() {
             try {
+                console.log(`fetchLeaderboardData: Fetching leaderboard from ${GAS_WEB_APP_URL}`);
                 const response = await fetch(GAS_WEB_APP_URL + '?command=getLeaderboard');
                 const data = await response.json();
+                console.log('fetchLeaderboardData: Leaderboard data received:', data);
 
                 if (data.success) {
                     leaderboard = data.leaderboard; // Asume que GAS devuelve la lista ya ordenada
@@ -518,9 +579,9 @@
             currentUserLeaderboardPosition.textContent = '';
 
             // Mostrar solo los primeros 3 lugares
-            // La tabla de clasificación se ordenará por calorías en lugar de pasos
-            const sortedLeaderboardByCalories = [...leaderboard].sort((a, b) => (b.CaloriasTotales || 0) - (a.CaloriasTotales || 0));
-            const top3 = sortedLeaderboardByCalories.slice(0, 3);
+            // Ordenar por Calorías Totales de forma descendente
+            const sortedLeaderboard = [...leaderboard].sort((a, b) => (b.CaloriasTotales || 0) - (a.CaloriasTotales || 0));
+            const top3 = sortedLeaderboard.slice(0, 3);
 
             if (top3.length === 0) {
                 leaderboardList.innerHTML = '<li class="text-gray-500 text-center">Nadie ha registrado actividad aún. ¡Sé el primero!</li>';
@@ -530,24 +591,140 @@
                     listItem.className = 'leaderboard-item';
                     listItem.innerHTML = `
                         <span>${index + 1}. ${user.NombreParticipante}</span>
-                        <span>${(user.CaloriasTotales || 0).toLocaleString()} calorías</span>
+                        <span>${Math.round(user.CaloriasTotales || 0).toLocaleString()} calorías</span>
                     `;
                     leaderboardList.appendChild(listItem);
                 });
             }
 
-            // Mostrar la posición del usuario actual por calorías
+            // Mostrar la posición del usuario actual (basado en calorías)
             if (userName) {
-                const userIndex = sortedLeaderboardByCalories.findIndex(u => u.NombreParticipante === userName);
+                const userIndex = sortedLeaderboard.findIndex(u => u.NombreParticipante === userName);
                 if (userIndex !== -1) {
                     const userPosition = userIndex + 1;
-                    const userTotalCalories = (sortedLeaderboardByCalories[userIndex].CaloriasTotales || 0).toLocaleString();
+                    const userTotalCalories = Math.round(sortedLeaderboard[userIndex].CaloriasTotales || 0).toLocaleString();
                     currentUserLeaderboardPosition.textContent = `Estás en la posición ${userPosition} con ${userTotalCalories} calorías.`;
                 } else {
                     currentUserLeaderboardPosition.textContent = `Aún no apareces en la tabla de clasificación. ¡Registra tu actividad!`;
                 }
             }
         }
+
+        /**
+         * Dibuja la gráfica de puntos de IMC.
+         * @param {Array<number|null>} imcData - Un array de 4 valores de IMC (null si no hay dato).
+         */
+        function renderIMCChart(imcData) {
+            imcChartDiv.innerHTML = ''; // Limpiar cualquier gráfica anterior
+            imcChartMessage.textContent = ''; // Limpiar mensajes anteriores
+            imcChartSection.classList.remove('hidden'); // Mostrar la sección de la gráfica
+
+            console.log(`renderIMCChart: Raw imcData received:`, imcData); // <-- LOG
+
+            const validData = imcData.map((d, i) => ({
+                index: i + 1, // Para el eje X (1, 2, 3, 4)
+                value: typeof d === 'number' && !isNaN(d) && d > 0 ? d : null // Solo valores numéricos y > 0
+            })).filter(d => d.value !== null); // Filtrar puntos nulos
+
+            console.log(`renderIMCChart: Filtered validData:`, validData); // <-- LOG
+
+            if (validData.length === 0) {
+                imcChartDiv.innerHTML = '';
+                imcChartMessage.textContent = 'No hay datos de IMC válidos para mostrar la gráfica.';
+                return;
+            }
+
+            const margin = { top: 20, right: 30, bottom: 40, left: 40 };
+            const width = 400 - margin.left - margin.right;
+            const height = 200 - margin.top - margin.bottom;
+
+            const svg = d3.select(imcChartDiv)
+                .append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Escala X (para 4 puntos de datos)
+            const x = d3.scalePoint()
+                .domain(d3.range(1, 5).map(String)) // Dominios "1", "2", "3", "4"
+                .range([0, width])
+                .padding(0.5); // Espacio entre puntos
+
+            // Eje X
+            svg.append("g")
+                .attr("transform", `translate(0,${height})`)
+                .call(d3.axisBottom(x))
+                .attr("class", "axis x-axis");
+
+            // Escala Y (del 15 al 45, brincos de 5 en 5)
+            const y = d3.scaleLinear()
+                .domain([15, 45]) // Dominio de 15 a 45
+                .range([height, 0]);
+
+            // Eje Y
+            svg.append("g")
+                .call(d3.axisLeft(y).ticks(Math.round((45 - 15) / 5))) // Ticks cada 5 unidades
+                .attr("class", "axis y-axis");
+
+            // Línea que une los puntos
+            const line = d3.line()
+                .x(d => x(String(d.index)))
+                .y(d => y(d.value))
+                .defined(d => d.value !== null); // Solo dibuja la línea si el valor no es nulo
+
+            svg.append("path")
+                .datum(validData)
+                .attr("class", "line")
+                .attr("d", line);
+
+            // Puntos de datos
+            svg.selectAll(".dot")
+                .data(validData)
+                .enter().append("circle")
+                .attr("class", "dot")
+                .attr("cx", d => x(String(d.index)))
+                .attr("cy", d => y(d.value))
+                .attr("r", 5); // Radio del punto
+            
+            // Mostrar el valor del IMC al lado de cada punto
+            svg.selectAll(".imc-label")
+                .data(validData)
+                .enter().append("text")
+                .attr("class", "imc-label")
+                .attr("x", d => x(String(d.index)))
+                .attr("y", d => y(d.value) - 10) // Un poco por encima del punto
+                .text(d => d.value.toFixed(2)); // Mostrar con 2 decimales
+
+            // --- Líneas de referencia para IMC normal ---
+            const normalIMCLower = 18.5;
+            const normalIMCUpper = 24.9;
+
+            // Línea de IMC Normal (Límite Inferior)
+            svg.append("line")
+                .attr("class", "reference-line")
+                .attr("x1", 0)
+                .attr("y1", y(normalIMCLower))
+                .attr("x2", width)
+                .attr("y2", y(normalIMCLower));
+
+            // Línea de IMC Normal (Límite Superior)
+            svg.append("line")
+                .attr("class", "reference-line")
+                .attr("x1", 0)
+                .attr("y1", y(normalIMCUpper))
+                .attr("x2", width)
+                .attr("y2", y(normalIMCUpper));
+            // --- Fin Líneas de referencia ---
+
+            // Mensaje si no hay suficientes datos para una línea
+            if (validData.length < 2) {
+                imcChartMessage.textContent = 'Se necesitan al menos 2 registros de IMC para dibujar la línea.';
+            } else {
+                imcChartMessage.textContent = ''; // Limpiar mensaje si hay suficientes datos
+            }
+        }
+
 
         /**
          * Actualiza todos los elementos dinámicos de la interfaz de usuario.
@@ -563,6 +740,8 @@
                 totalStepsDisplay.textContent = '0';
                 totalCaloriesDisplay.textContent = '0';
                 currentUserLastRecordDateElem.textContent = 'N/A'; // Asegurarse de que se resetee
+                imcChartSection.classList.add('hidden'); // Ocultar gráfica si no hay usuario
+                imcChartMessage.textContent = ''; // Limpiar mensaje
             }
             loadUserNameData(); // Cargar datos específicos del usuario y actualizar el estado del botón
             fetchLeaderboardData(); // Asegurar que la tabla de clasificación se actualice
@@ -666,24 +845,23 @@
 
             try {
                 const { steps, calories } = calculateActivityData(manualSteps);
-                const todayDate = getTodayDateString();
-                const timestamp = new Date().toISOString();
+                const todayDate = getTodayDateString(); // Obtener la fecha en CDMX para el envío
 
                 const payload = {
                     command: 'submitDailyRecord',
                     data: JSON.stringify({ // Stringify the data object
-                        Fecha: todayDate,
+                        Fecha: todayDate, // Enviar la fecha en CDMX
                         Nombre: userName, // 'Nombre' para Registros Diarios
                         Participante: userName, // 'Participante' para Totales Concurso
                         Pasos: steps,
                         Calorias: calories,
                         Actividad: selectedActivity,
                         Duracion: selectedDuration,
-                        // ¡CAMBIO AQUÍ! Ahora el script de GAS se encarga de la subida a Drive
-                        Captura: uploadedImageBase64 // Se envía la Base64 al script de GAS
+                        Captura: uploadedImageBase64 // Puede ser null
                     })
                 };
 
+                console.log('submitDailyRecord: Sending payload to GAS:', payload);
                 const response = await fetch(GAS_WEB_APP_URL, {
                     method: 'POST',
                     headers: {
@@ -693,6 +871,7 @@
                 });
 
                 const result = await response.json();
+                console.log('submitDailyRecord: Response from GAS:', result);
 
                 if (result.success) {
                     showMessage('¡Actividad registrada con éxito!');
@@ -727,8 +906,10 @@
          */
         async function loadParticipants() {
             try {
+                console.log(`loadParticipants: Fetching participants from ${GAS_WEB_APP_URL}`);
                 const response = await fetch(GAS_WEB_APP_URL + '?command=getParticipants');
                 const data = await response.json();
+                console.log('loadParticipants: Participants data received:', data);
 
                 if (data.success && data.participants) {
                     // Ordenar participantes alfabéticamente
@@ -759,14 +940,13 @@
             // Cargar participantes al inicio
             await loadParticipants();
 
-            // Rellenar el selector de actividades
+            // Rellenar el selector de actividades y ordenarlas alfabéticamente
             activitySelect.innerHTML = '<option value="">-- Selecciona una actividad --</option>'; // Limpiar opciones existentes
             
             // Ordenar las actividades alfabéticamente por nombre
-            const sortedActivities = [...commonActivities].sort((a, b) => a.name.localeCompare(b.name));
+            commonActivities.sort((a, b) => a.name.localeCompare(b.name));
 
-            // Añadir las actividades ordenadas
-            sortedActivities.forEach(activity => {
+            commonActivities.forEach(activity => {
                 const option = document.createElement('option');
                 option.value = activity.name;
                 option.textContent = activity.name;
