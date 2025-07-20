@@ -164,16 +164,12 @@
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
             border: 1px solid #e0e0e0;
         }
-        .chart-container .chart-title {
-            font-size: 1.25rem;
-            font-weight: bold;
-            color: var(--color-primary);
-            margin-bottom: 1rem;
-            text-align: center;
-        }
         .chart-container svg {
             display: block;
             margin: auto;
+            /* Asegurar que el SVG sea responsivo */
+            width: 100%;
+            height: auto; /* Mantener la proporción */
         }
         .axis text {
             font-size: 0.75rem;
@@ -207,11 +203,7 @@
             stroke-width: 2;
             stroke-dasharray: 5 5; /* Línea punteada */
         }
-        .reference-label {
-            fill: #16a34a; /* green-700 */
-            font-size: 0.7rem;
-            text-anchor: start;
-        }
+        /* No necesitamos reference-label si no se muestran las etiquetas */
     </style>
 </head>
 <body>
@@ -634,33 +626,40 @@
                 return;
             }
 
+            // Dimensiones internas del viewBox
+            const viewBoxWidth = 400;
+            const viewBoxHeight = 200;
             const margin = { top: 20, right: 30, bottom: 40, left: 40 };
-            const width = 400 - margin.left - margin.right;
-            const height = 200 - margin.top - margin.bottom;
+
+            // Calcular el ancho y alto real del área de dibujo dentro del viewBox
+            const chartWidth = viewBoxWidth - margin.left - margin.right;
+            const chartHeight = viewBoxHeight - margin.top - margin.bottom;
 
             const svg = d3.select(imcChartDiv)
                 .append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
+                .attr("width", "100%") // El SVG ocupa el 100% del ancho del contenedor
+                .attr("height", "auto") // La altura se ajusta automáticamente
+                .attr("viewBox", `0 0 ${viewBoxWidth} ${viewBoxHeight}`) // Define el sistema de coordenadas interno
+                .attr("preserveAspectRatio", "xMidYMid meet") // Mantiene la proporción
                 .append("g")
                 .attr("transform", `translate(${margin.left},${margin.top})`);
 
             // Escala X (para 4 puntos de datos)
             const x = d3.scalePoint()
                 .domain(d3.range(1, 5).map(String)) // Dominios "1", "2", "3", "4"
-                .range([0, width])
+                .range([0, chartWidth]) // Usar chartWidth
                 .padding(0.5); // Espacio entre puntos
 
             // Eje X
             svg.append("g")
-                .attr("transform", `translate(0,${height})`)
+                .attr("transform", `translate(0,${chartHeight})`) // Usar chartHeight
                 .call(d3.axisBottom(x))
                 .attr("class", "axis x-axis");
 
             // Escala Y (del 15 al 45, brincos de 5 en 5)
             const y = d3.scaleLinear()
                 .domain([15, 45]) // Dominio de 15 a 45
-                .range([height, 0]);
+                .range([chartHeight, 0]); // Usar chartHeight
 
             // Eje Y
             svg.append("g")
@@ -705,7 +704,7 @@
                 .attr("class", "reference-line")
                 .attr("x1", 0)
                 .attr("y1", y(normalIMCLower))
-                .attr("x2", width)
+                .attr("x2", chartWidth) // Usar chartWidth
                 .attr("y2", y(normalIMCLower));
 
             // Línea de IMC Normal (Límite Superior)
@@ -713,7 +712,7 @@
                 .attr("class", "reference-line")
                 .attr("x1", 0)
                 .attr("y1", y(normalIMCUpper))
-                .attr("x2", width)
+                .attr("x2", chartWidth) // Usar chartWidth
                 .attr("y2", y(normalIMCUpper));
             // --- Fin Líneas de referencia ---
 
